@@ -5,8 +5,7 @@ const config = {
     server: 'SERVER\\SQLEXPRESS', // You can use 'localhost\\instance' to connect to named instance
     database: 'AdventureWorks2012',
 }
-
-const db = new sql.ConnectionPool(config).connect();
+const db = new sql.ConnectionPool(config);
 
 // const execute = async () => {
 //     let database = await db;
@@ -17,7 +16,16 @@ const db = new sql.ConnectionPool(config).connect();
 //     database.close();
 // }
 
+const getProduct = async (productID) => {
+    let database = await db.connect();
+    let result = await database.request().query(`SELECT * FROM Production.Product WHERE ProductID=${productID}`);
+    console.dir(result);
+    database.close();
+    return result.recordset[0];
+}
+
 module.exports = {
-    db
+    db,
+    getProduct
 }
 
