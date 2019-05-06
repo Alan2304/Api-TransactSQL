@@ -17,4 +17,7 @@ const db = new sql.ConnectionPool(config).connect();
 //     database.close();
 // }
 
+module.exports = {
+    db
+}
 
