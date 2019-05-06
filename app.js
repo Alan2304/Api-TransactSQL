@@ -1,6 +1,7 @@
 const express = require('express');
 const bodyParse = require('body-parser');
 const sql = require('mssql');
+const db = require('./db');
 
 var app = express();
 
