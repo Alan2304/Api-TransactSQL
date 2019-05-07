@@ -19,7 +19,6 @@ const db = new sql.ConnectionPool(config);
 const getProduct = async (productID) => {
     let database = await db.connect();
     let result = await database.request().query(`SELECT * FROM Production.Product WHERE ProductID=${productID}`);
-    console.dir(result);
     database.close();
     return result.recordset[0];
 }
