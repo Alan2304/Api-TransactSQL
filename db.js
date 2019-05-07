@@ -6,9 +6,6 @@ const config = {
     database: 'AdventureWorks2012',
 }
 const db = new sql.ConnectionPool(config);
-var helper = {
-    idOrderHeader: null
-}
 // const execute = async () => {
 //     let database = await db;
 //     //const pool = await new ConnectionPool(config).connect();
@@ -31,7 +28,7 @@ const createOrderHeader = async (customerId) => {
 
 const transactionProm =async (customerId) => {
     let database = await db.connect();
-    const transaction = new sql.Transaction(database);
+    let transaction = new sql.Transaction(database);
     let rolledBack = false;
     return new Promise((resolve, reject) => {
         transaction.begin(err => {
@@ -58,26 +55,73 @@ const transactionProm =async (customerId) => {
                     ,1
                     ,1);
                     SELECT SCOPE_IDENTITY() AS id;`
-    
             new sql.Request(transaction).query(query, (err, result) => {
                 if (err) {
-                    reject(err);
+                    if (!rolledBack) {
+                        transaction.rollback(err => {
+                            reject(err);
+                        });
+                    }
                 } else {
-                    resolve(result);
+                    transaction.commit(err => {                        
+                        resolve(result);
+                    });
                 }
             });
         });
     })
 }
 
-const getHelper = () => {
-    return helper;
+const createOrderDetail = async (productId, qty, salesOrderId) => {
+    return transactionOrderDetail(productId, qty, salesOrderId);
+}
+
+const transactionOrderDetail = async (productId, qty, salesOrderId) => {
+    let newDb = new sql.ConnectionPool(config);
+    let database = await newDb.connect();
+    let transaction = new sql.Transaction(database);
+    let rolledBack = false;
+
+    return new Promise((resolve, reject) => {
+        transaction.begin(err => {
+            transaction.on('rollback', aborted => {
+                rolledBack = true;
+            });
+
+            let query = `INSERT INTO [Sales].[SalesOrderDetail]
+                ([SalesOrderID]
+                ,[OrderQty]
+                ,[ProductID]
+                ,[SpecialOfferID]
+                ,[UnitPrice])
+                VALUES
+                    (${salesOrderId}
+                    ,${qty}
+                    ,${productId}
+                    ,1
+                    ,10);
+                    SELECT SCOPE_IDENTITY() AS id;`;
+            new sql.Request(transaction).query(query, (err, result) => {
+                if (err) {
+                    transaction.rollback(err => {
+                        reject(err)
+                    });
+                } else {
+                    transaction.commit(err => {
+                        resolve(result);
+                    });
+                } 
+            });
+        })
+    });
+
 }
 
 module.exports = {
     db,
     getProduct,
     createOrderHeader,
-    getHelper
+    transactionOrderDetail,
+    createOrderDetail
 }
 
